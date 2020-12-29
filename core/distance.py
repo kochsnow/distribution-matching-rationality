@@ -1,10 +1,7 @@
 import tensorflow as tf
-tf.enable_eager_execution()
-
-
 def l2diff(x1, x2):
     """
-    standard euclidean norm
+    standard euclidean norms
     """
     return tf.math.sqrt(tf.cast(tf.reduce_sum((x1 - x2) ** 2), "float32"))
 
@@ -13,9 +10,9 @@ def moment_diff(sx1, sx2, k):
     """
     difference between moments
     """
-    print(sx1, sx2)
-    ss1 = tf.reduce_mean(sx1 * tf.cast(k, 'int32'), 0)
-    ss2 = tf.reduce_mean(sx2 * tf.cast(k, 'int32'), 0)
+    #print(sx1, sx2)
+    ss1 = tf.reduce_mean(sx1 * tf.cast(k, 'float32'), 0)
+    ss2 = tf.reduce_mean(sx2 * tf.cast(k, 'float32'), 0)
     return l2diff(ss1, ss2)
 
 
@@ -58,11 +55,3 @@ class Distance(object):
         c2 = 1. / (x2.shape[0] - 1) * (tf.tensordot(tf.transpose(x2), x2) -
                                        tf.tensordot(tf.transpose(x2.mean(axis=0)), x2.sum(axis=0)))
         return 1. / (4 * x1.shape[0] ** 2) * ((c1 - c2) ** 2).sum()
-
-if __name__ == '__main__':
-    dist = Distance("coral")
-    a = tf.constant([[4,2,3,4], [1,2,3,4]])
-    b = tf.constant([[2,2,3,4], [2,2,3,4]])
-    print(dist.distance(a, b))
-
-

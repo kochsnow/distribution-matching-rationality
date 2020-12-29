@@ -92,8 +92,8 @@ def validate(model, annotation_dataset, idx2word, visual_interval=5, file=None):
 
         # go through both G0 & G1
         # rationales -- (batch_size, seq_length, 2)
-        _, neg_rationales, _ = model(inputs, masks, label_zeros, path=0)
-        _, pos_rationales, _ = model(inputs, masks, label_ones, path=1)
+        _, neg_rationales, _, _, _, _ = model(inputs, masks, label_zeros, path=0)
+        _, pos_rationales, _, _, _, _ = model(inputs, masks, label_ones, path=1)
 
         neg_mask = tf.cast(tf.expand_dims(tf.expand_dims(labels[:, 0], -1), -1),
                            dtype=tf.float32)
@@ -162,7 +162,7 @@ def validate(model, annotation_dataset, idx2word, visual_interval=5, file=None):
     micro_f1 = 2 * (micro_precision * micro_recall) / (micro_precision +
                                                        micro_recall)
     sparsity = num_predicted_pos / tf.cast(num_words, tf.float32)
-
+    print("batch {}; batch_size: {} num_words:{}".format(batch+1, batch_size, num_words))
     output_string = 'Validate rationales: precision: %.4f, recall: %.4f, f1: %4f%%\n' % (
         100 * micro_precision, 100 * micro_recall, 100 * micro_f1)
     output_string += "Actual sparsity: %4f%%\n" % (100 * sparsity)

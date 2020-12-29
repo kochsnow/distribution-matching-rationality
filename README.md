@@ -1,42 +1,58 @@
-# A Game Theoretic Approach to Class-wise Selective Rationalization
-This repo contains the Tensorflow implementation of [A Game Theoretic Approach to Class-wise Selective Rationalization](https://arxiv.org/abs/1910.12853) (CAR).  To make this repo neat and light-weight, we release the core code with a single multi-aspect dataset (i.e. the beer review) for the demo purpose.  If you are interested in reproducing the exact results for other datasets, please contact us, and we are very happy to provide the code and help.
+# Distribution Matching Rationalization
+这个库是对Distribution Matching Rationalization(DMR)可解释性框架的TensorFlow版本的实现，[Distribution Matching Rationalization]()
 
-A short video explains the main concepts of our work.  For more detail about CAR, Please see our [NeurIPS 2019 paper](https://arxiv.org/abs/1910.12853).  If you find this work useful and use it in your research, please consider citing our paper.
-
-[![A Game Theoretic Approach to Class-wise Selective Rationalization](./assets/screenshot.png)](https://youtu.be/DFtJL7PcGFA)
+# Getting Started
+**clone repo**
 
 ```
-@article{chang2019rationale,
-  title={A Game Theoretic Approach to Class-wise Selective Rationalization},
-  author={Chang, Shiyu and Zhang, Yang and Yu, Mo and Jaakkola, Tommi},
-  journal={arXiv preprint arXiv:1910.12853},
-  year={2019}
-}
+git clone https://dev.rcrai.com/huangyongfeng/distribution-matching-rationalization.git
+cd distribution-matching-rationalization
 ```
+**prepare review dataset**
 
-## Getting Started
-Below is the step-by-step instruction for running our code.  After cloning the repo, please first run the following script to download the dataset and the pre-trained word embeddings.
 
-```bash
-sh download_data.sh
 ```
-After the download, you will now see two folders in your main directory, which are `data` and `embeddings`.  It is worth mentioning that, aspect 0,1, and 2 in the dataset are corresponding to the appearance, aroma, and palate aspect, respectively.
+mkdir data
+cp -r /data1/share/harden/interpret_BERT/DMR_data ./data
+mkdir embeddings
+cp -r /data1/share/harden/interpret_BERT/embedding/ ./embeddings
+```
+(1)Reviews Dataset包括beer review dataset与 hotel review dataset，分别对应`data`文件夹下面的`beer_review`和`hotel_review`文件夹；
+- `beer_review`中的`aspect`0 1 2分别对应appearance, aroma, and palate；
+- `hotel_review`中的`aspect`0 1 2分别对应location, service, and cleanliness；
 
-Next, you need to properly set up your virtual environment and install all dependencies from the `requirements.txt` using the commend:
-```bash
+
+(2) `embeddings`中存放的是词向量文件，我们采用的是glove词向量。
+
+**build environment**
+
+```
 pip install -r requirements.txt
 ```
 
-Once all packages are installed, now you are free to generate some interesting rationales by using the following commends  under your main directory.
-```bash
-sh scripts/run_beer_0.sh
+**training**
+以beer reviews dataset的aspect=0为例，跑如下脚本：
 ```
-You are expected to see a similar result as the following.
-```console
-The annotation performance: sparsity: 11.9761, precision: 76.2066, recall: 49.2948, f1: 59.8653
+#beer review dataset, aspect=0 appearance
+scripts/run_beer_0.sh
 ```
-**Tested environment:**
-Tensorflow: 1.12, CUDA driver: 384.183, and CUDA version: 9.0
+预期结果为
+```
+The annotation performance: sparsity: 11.6997, precision: 83.5609, recall: 52.8048, f1: 64.7144
+```
+对annotation test dataset的rationale预测结果储存于：
+```
+./beer_results/aspect0/visual_ann.txt
+```
+预测的rationale示例如下：
+![image](https://note.youdao.com/yws/api/personal/file/AFFD88943D144AD7BA54ECBE0BB11E8A?method=download&shareKey=1e6e1b421e3faa4b9c7f874ec963ea2e)
 
-## Final Words
-That's all for now and hope this repo is useful to your research.  For any questions, please create an issue and we will get back to you as soon as possible.
+运行`scripts`中的其他脚本可以得到如下的结果
+- beer review
+![image](https://note.youdao.com/yws/api/personal/file/F8A2A4DB18A3441BAAC8B3E196BF21ED?method=download&shareKey=1637a8956a1a906f66998eae30700443)
+- hotel review
+![image](https://note.youdao.com/yws/api/personal/file/A470599E7C994AFEBBF8C41B5E455CBF?method=download&shareKey=99f3d61d9ad47f5784785047ce9f0cda)
+
+
+
+

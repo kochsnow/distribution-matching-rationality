@@ -8,7 +8,7 @@ from dataset import DataProcessor, get_dataset
 
 class HotelProcessor(DataProcessor):
     """
-    Processor for the Beer dataset. 
+    Processor for the Hotel dataset. 
     """
 
     def get_train_examples(self, data_dir):
@@ -28,7 +28,7 @@ class HotelProcessor(DataProcessor):
         for (i, line) in enumerate(lines):
             if i == 0:
                 continue
-            text = self._convert_to_unicode(line[0])
+            text = self._convert_to_unicode(line[2])
             label = int(self._convert_to_unicode(line[1]))
             # convert label to one-hot format
             one_hot_label = [0] * num_classes
@@ -40,13 +40,13 @@ class HotelProcessor(DataProcessor):
 def get_hotel_dataset(data_dir, max_seq_length, word_threshold, balance=False):
     """
     Return tf datasets (train and dev) and language index
-    for the beer dataset.
+    for the hotel dataset.
     Assume train.tsv and dev.tsv are in the dir.
     """
     processor = HotelProcessor()
     train_examples = processor.get_train_examples(data_dir)
     dev_examples = processor.get_dev_examples(data_dir)
-    print("Dataset: Beer Review")
+    print("Dataset: hotel Review")
     print("Training samples %d, Validation sampels %d" %
           (len(train_examples), len(dev_examples)))
 
@@ -68,7 +68,7 @@ def get_hotel_dataset(data_dir, max_seq_length, word_threshold, balance=False):
         random.seed(12252018)
 
         print("Make the Training dataset class balanced.")
-        # make the beer dataset to be a balanced dataset
+        # make the hotel dataset to be a balanced dataset
         min_examples = int(min(train_labels[0], train_labels[1]))
         pos_examples = []
         neg_examples = []
@@ -99,6 +99,14 @@ def get_hotel_dataset(data_dir, max_seq_length, word_threshold, balance=False):
                        word_threshold)
 
 
+def read_tsv(input_file, quotechar=None):
+    """Reads a tab separated value file."""
+    with tf.gfile.Open(input_file, "r") as f:
+        reader = csv.reader(f, delimiter="\t", quotechar=quotechar)
+        lines = []
+        for line in reader:
+            lines.append(line)
+        return lines
 def get_hotel_annotation(annotation_path,
                         aspect,
                         max_seq_length,
@@ -107,7 +115,7 @@ def get_hotel_annotation(annotation_path,
                         pos_thres=0.6):
     """
     Read annotation from json and 
-    return tf datasets of the beer annotation.
+    return tf datasets of the hotel annotation.
     fpath -- annotations.json
     aspects:
         0 -- appearance
@@ -120,91 +128,69 @@ def get_hotel_annotation(annotation_path,
         labels -- (num_examples, num_classes) in a one-hot format.        
         rationales -- binary sequence (num_examples, sequence_length)    
     """
-    aspect = 0
     data = []
     labels = []
     masks = []
     rationales = []
     num_classes = 2
+    lines=read_tsv(annotation_path)
+    processor = HotelProcessor()
+    for i, line in enumerate(lines):
+        if i==0:
+            continue
+        text_ = processor._convert_to_unicode(line[2]).split(" ")
+        label_ = int(processor._convert_to_unicode(line[1]))
+        rationale = [int(x) for x in 
+                     processor._convert_to_unicode(line[3]).split(" ")]
+        one_hot_label = [0] * num_classes
+        one_hot_label[label_] = 1
+        # process the text
+        input_ids = []
+        if len(text_) > max_seq_length:
+            text_ = text_[0:max_seq_length]
 
-    with open(annotation_path, "rt") as fin:
-        for counter, line in enumerate(fin):
-            item = json.loads(line)
+        for word in text_:
+            word = word.strip()
+            try:
+                input_ids.append(word2idx[word])
+            except:
+                # word is not exist in word2idx, use <unknown> token
+                input_ids.append(word2idx["<unknown>"])
+        # process mask
+        # The mask has 1 for real word and 0 for padding tokens.
+        input_mask = [1] * len(input_ids)
 
-            # obtain the data
-            text_ = item["x"]
-            y = item["y"][aspect]
-            rationale = item[str(aspect)]
+        # zero-pad up to the max_seq_length.
+        while len(input_ids) < max_seq_length:
+            input_ids.append(0)
+            input_mask.append(0)
 
-            # check if the rationale is all zero
-            if len(rationale) == 0:
-                # no rationale for this aspect
-                continue
+        assert (len(input_ids) == max_seq_length)
+        assert (len(input_mask) == max_seq_length)
 
-            # process the label
-            if float(y) >= pos_thres:
-                y = 1
-            elif float(y) <= neg_thres:
-                y = 0
-            else:
-                continue
-            one_hot_label = [0] * num_classes
-            one_hot_label[y] = 1
+        # construct rationale
+        binary_rationale = [0] * len(input_ids)
+        for k in range(len(binary_rationale)):
+            #print(k)
+            if k < len(rationale):
+                binary_rationale[k] = rationale[k] 
 
-            # process the text
-            input_ids = []
-            if len(text_) > max_seq_length:
-                text_ = text_[0:max_seq_length]
+        data.append(input_ids)
+        labels.append(one_hot_label)
+        masks.append(input_mask)
+        rationales.append(binary_rationale)
 
-            for word in text_:
-                word = word.strip()
-                try:
-                    input_ids.append(word2idx[word])
-                except:
-                    # word is not exist in word2idx, use <unknown> token
-                    input_ids.append(word2idx["<unknown>"])
+    data = np.array(data, dtype=np.int32)
+    labels = np.array(labels, dtype=np.int32)
+    masks = np.array(masks, dtype=np.int32)
+    rationales = np.array(rationales, dtype=np.int32)
 
-            # process mask
-            # The mask has 1 for real word and 0 for padding tokens.
-            input_mask = [1] * len(input_ids)
+    label_dis = np.sum(labels, axis=0)
+    print("Annotated rationales: %d" % data.shape[0])
+    print("Annotated data: %d positive examples, %d negative examples." %
+          (label_dis[1], label_dis[0]))
 
-            # zero-pad up to the max_seq_length.
-            while len(input_ids) < max_seq_length:
-                input_ids.append(0)
-                input_mask.append(0)
-
-            assert (len(input_ids) == max_seq_length)
-            assert (len(input_mask) == max_seq_length)
-
-            # construct rationale
-            binary_rationale = [0] * len(input_ids)
-            for zs in rationale:
-                start = zs[0]
-                end = zs[1]
-                if start >= max_seq_length:
-                    continue
-                if end >= max_seq_length:
-                    end = max_seq_length
-
-                for idx in range(start, end):
-                    binary_rationale[idx] = 1
-
-            data.append(input_ids)
-            labels.append(one_hot_label)
-            masks.append(input_mask)
-            rationales.append(binary_rationale)
-
-        data = np.array(data, dtype=np.int32)
-        labels = np.array(labels, dtype=np.int32)
-        masks = np.array(masks, dtype=np.int32)
-        rationales = np.array(rationales, dtype=np.int32)
-
-        label_dis = np.sum(labels, axis=0)
-        print("Annotated rationales: %d" % data.shape[0])
-        print("Annotated data: %d positive examples, %d negative examples." %
-              (label_dis[1], label_dis[0]))
-
-        annotated_dataset = tf.data.Dataset.from_tensor_slices(
-            (data, masks, labels, rationales))
+    annotated_dataset = tf.data.Dataset.from_tensor_slices(
+        (data, masks, labels, rationales))
 
     return annotated_dataset

@@ -193,26 +193,26 @@ class TargetRNN(tf.keras.Model):
         # concat the path info before feeding to descriminator
         rationale_embeddings = tf.concat([rationale_embeddings, gen_idx],
                                          axis=-1)
-
+        raw_embeddings = tf.concat([dis_embeddings, gen_idx],
+                                         axis=-1)
         # encoder for task prediction
         # shape -- (batch_size, seq_length, hidden_dim * 2) if bidirectional
-        discriminator_outputs = self.discriminator(rationale_embeddings)
-
+        discriminator_rationale_outputs = self.discriminator(rationale_embeddings)
+        discriminator_raw_outputs = self.discriminator(raw_embeddings)
         # mask before max pooling
         # discriminator_outputs * mask --> mask <pad>
         # (1 - mask) * (-10e6) --> <pad> become very neg
-        masked_dis_outputs = discriminator_outputs * masks_ + (1. -
-                                                               masks_) * (-1e6)
-
+        masked_dis_rationale_outputs = discriminator_rationale_outputs * masks_ + (1. -masks_) * (-1e6)
+        masked_discriminator_raw_outputs = discriminator_raw_outputs * masks_ + (1. -masks_) * (-1e6)
         # aggregates hidden outputs via max pooling
         # shape -- (batch_size, hidden_dim * 2)
-        discriminator_output = tf.reduce_max(masked_dis_outputs, axis=1)
-
+        discriminator_rationale_output = tf.reduce_max(masked_dis_rationale_outputs, axis=1)
+        discriminator_raw_output = tf.reduce_max(masked_discriminator_raw_outputs, axis=1)
         # task prediction
         # shape -- (batch_size, num_classes)
-        discriminator_logits = self.discriminator_fc(discriminator_output)
-
-        return discriminator_logits, rationale, discriminator_output
+        discriminator_rationale_logits = self.discriminator_fc(discriminator_rationale_output)
+        
+        return discriminator_rationale_logits, rationale, discriminator_rationale_output, masked_dis_rationale_outputs, discriminator_raw_output, masked_discriminator_raw_outputs
 
     def generator_pos_trainable_variables(self):
         """

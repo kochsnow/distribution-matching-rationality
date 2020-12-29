@@ -3,8 +3,9 @@ import random
 import tensorflow as tf
 from metric import get_sparsity_loss, get_continuity_loss, compute_accuracy
 from visualize import show_binary_rationale
+from distance import Distance
 import pdb
-
+#from dist import Distance
 def gen_nl_loss(logits, targets, truth, path):
     """
     This is a negative likelihood loss for the generator. 
@@ -103,6 +104,7 @@ def train(model, teacher_encoder, optimizers, dataset, step_counters, args):
     Training target dependent rationale generation 
     (Tommi's three player version).
     """
+    print("cls_lambda:{} om_lambda:{} fm_lambda:{}".format(args.cls_lambda, args.om_lambda, args.fm_lambda))
     gen_pos_optimizer = optimizers[0]
     gen_neg_optimizer = optimizers[1]
     dis_optimizer = optimizers[2]
@@ -110,7 +112,8 @@ def train(model, teacher_encoder, optimizers, dataset, step_counters, args):
     gen_pos_step_counter = step_counters[0]
     gen_neg_step_counter = step_counters[1]
     dis_step_counter = step_counters[2]
-    params_t =3.0
+    params_t =args.params_t
+    CMD = Distance(args.distance)
     for (batch, (inputs, masks, labels)) in enumerate(dataset):
         # get variables
         gen_pos_vars = model.generator_pos_trainable_variables()
@@ -135,24 +138,30 @@ def train(model, teacher_encoder, optimizers, dataset, step_counters, args):
         with tf.GradientTape() as dis_tape:
             # logits -- (batch_size, num_classes)
             # rationales -- (batch_size, seq_length, 2)
-            dis_student_logits, rationales, dis_student_output = model(inputs, masks, labels, path)
+            dis_student_logits, rationales, dis_student_output, dis_student_outputs,\
+            dis_student_raw_output, dis_student_raw_outputs = model(inputs, masks, labels, path)
             dis_teacher_logits, dis_teacher_output = teacher_encoder(inputs, masks, labels, path)
             dis_hard_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=dis_student_logits, labels=labels))
             soft_labels = tf.nn.softmax(dis_teacher_logits/params_t)
             dis_soft_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=dis_student_logits, labels=soft_labels))
-            dis_fm_loss = tf.reduce_mean(tf.abs(dis_student_output-dis_teacher_output)**2)
+            #fm loss
+            cmd_loss_1 = CMD.distance(dis_student_output, dis_student_raw_output)
+            cmd_loss_2 = CMD.distance(dis_student_outputs, dis_student_raw_outputs)
+            dis_fm_loss = cmd_loss_1
             #pdb.set_trace()
-            dis_loss = 0.9*dis_hard_loss+ 0.1*dis_soft_loss+ 0.01*dis_fm_loss
+            dis_loss = args.cls_lambda*dis_hard_loss+args.om_lambda*dis_soft_loss+ args.fm_lambda*dis_fm_loss
+            
             if batch%20==0:
-                print("{}/{} dis_hard_loss:{:.4f} dis_soft_loss:{:.4f} dis_fm_loss:{:.4f}".format(batch, len(list(dataset)), dis_hard_loss, dis_soft_loss, dis_fm_loss))
-            #dis_loss = 0.99*dis_hard_loss+ 0.01*dis_soft_loss# 
-            #dis_loss = dis_hard_loss# 
+                print("{}/{} dis_hard_loss:{:.4f} dis_soft_loss:{:.4f} dis_fm_loss:{:.4f} \
+                      cmd_loss_1:{:.4f} cmd_loss_2:{:.4f}".format(
+                    batch, len(list(dataset)), dis_hard_loss, dis_soft_loss, dis_fm_loss,
+                cmd_loss_1, cmd_loss_2))
             
         # compute graident for the disc
         dis_grads = dis_tape.gradient(dis_loss, dis_vars)
 
         with tf.GradientTape() as gen_tape:
-            dis_logits, rationales, _ = model(inputs, masks, labels, path)
+            dis_logits, rationales, _, _, _, _ = model(inputs, masks, labels, path)
 
             # generator loss
             class_loss = gen_nl_loss(dis_logits, gen_targets, labels, path)
@@ -191,6 +200,3 @@ def train(model, teacher_encoder, optimizers, dataset, step_counters, args):
                                   rationales[sample_id, :, 1].numpy(),
                                   args.idx2word)
             sys.stdout.flush()
-
-
-

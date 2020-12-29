@@ -99,6 +99,74 @@ def get_beer_dataset(data_dir, max_seq_length, word_threshold, balance=False):
                        word_threshold)
 
 
+def get_big_beer_dataset(data_dir, max_seq_length, word_threshold, balance=False):
+    """
+    Return tf datasets (train and dev) and language index
+    for the beer dataset.
+    Assume train.tsv and dev.tsv are in the dir.
+    """
+    processor = BeerProcessor()
+    train_examples = processor.get_train_examples(data_dir)
+    dev_examples = processor.get_dev_examples(data_dir)
+    print("Dataset: Beer Review")
+    print("Training samples %d, Validation sampels %d" %
+          (len(train_examples), len(dev_examples)))
+
+    # check the label balance
+    train_labels = np.array([0., 0.])
+    for train_example in train_examples:
+        train_labels += train_example["label"]
+    print("Training data: %d positive examples, %d negative examples." %
+          (train_labels[1], train_labels[0]))
+
+    dev_labels = np.array([0., 0.])
+    for dev_example in dev_examples:
+        dev_labels += dev_example["label"]
+    print("Dev data: %d positive examples, %d negative examples." %
+          (dev_labels[1], dev_labels[0]))
+
+    if balance == True:
+
+        random.seed(12252018)
+
+        print("Make the Training dataset class balanced.")
+        # make the beer dataset to be a balanced dataset
+        max_examples = int(max(train_labels[0], train_labels[1]))
+        pos_examples = []
+        neg_examples = []
+
+        for train_example in train_examples:
+            if train_example["label"][0] == 1:
+                neg_examples.append(train_example)
+            else:
+                pos_examples.append(train_example)
+
+        assert (len(neg_examples) == train_labels[0])
+        assert (len(pos_examples) == train_labels[1])
+        tmp = []
+        if train_labels[0] >= train_labels[1]:
+            # more positive examples
+            for k in range(max_examples):
+                index = random.randint(0, len(pos_examples)-1)
+                tmp.append(pos_examples[index])
+            pos_examples = tmp
+        else:
+            # more negative examples
+            for k in range(max_examples):
+                index = random.randint(0, len(neg_examples)-1)
+                tmp.append(neg_examples[index])
+            neg_examples = tmp
+
+        assert (len(pos_examples) == len(neg_examples))
+        train_examples = pos_examples + neg_examples
+        print(
+            "After balance training data: %d positive examples, %d negative examples."
+            % (len(pos_examples), len(neg_examples)))
+
+    return get_dataset(train_examples, dev_examples, max_seq_length,
+                       word_threshold)
+
+
 def get_beer_annotation(annotation_path,
                         aspect,
                         max_seq_length,
