@@ -2,12 +2,6 @@
 This repo contains Tensorflow implementation of Distribution Matching Rationalization(DMR)，[Distribution Matching Rationalization]()
 
 # Getting Started
-**clone repo**
-
-```
-git clone https://dev.rcrai.com/huangyongfeng/distribution-matching-rationalization.git
-cd distribution-matching-rationalization
-```
 **prepare review data**
 For the original [beer review dataset](https://snap.stanford.edu/data/web-BeerAdvocate.html) has been removed by the dataset’s original author, at the request of the data owner, BeerAdvocate. We use [hotel review dataset](https://people.csail.mit.edu/yujia/files/r2a/data.zip) in the demo.
 To prepare data, runing the scripts as the following
@@ -17,7 +11,6 @@ sh download_data.sh
 
 
 **build environment**
-
 ```
 pip install -r requirements.txt
 ```
