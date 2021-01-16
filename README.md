@@ -25,7 +25,7 @@ Testing result is
 ```
 The annotation performance: sparsity: 10.6281, precision: 47.8882, recall: 59.9924, f1: 53.2612
 ```
-Extracted ratinales are saved in：
+It is worth mentioning that the result would vary even when you use a fixed seed. This is likely due to the non-deterministic problem of Tensorflow, CuDNN, and the low-level implementation of the cudnngru module (at least for the version we used and tested on). To eliminate such failure cases, for a given parameter setting, it is important to run the model learning procedure multiple times with different initializations.
 ```
 ./beer_results/aspect0/visual_ann.txt
 ```
