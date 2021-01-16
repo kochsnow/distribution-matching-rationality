@@ -30,10 +30,10 @@ Extracted ratinales are saved in：
 ./beer_results/aspect0/visual_ann.txt
 ```
 Extracted rationale example：
-![image](http://note.youdao.com/s/AjhgD75S)
+![image](https://note.youdao.com/yws/api/personal/file/WEB8f6aea977bbcbebff973c832091993c8?method=download&shareKey=acfe23b0b442855597ae32dffdc772b3)
 
 using the others scprit in the `scripts` can obtain the following results.
-![image](http://note.youdao.com/s/IBGcSbBL)
+![image](https://note.youdao.com/yws/api/personal/file/WEB049b1e0fba932b74600018060deb1e64?method=download&shareKey=96b29bc6927615ba43806a1506f83d09)
 
 
 
