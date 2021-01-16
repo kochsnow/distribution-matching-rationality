@@ -19,25 +19,21 @@ pip install -r requirements.txt
 Taking appearance aspect of beer review dataset as example
 ```
 #beer review dataset, aspect=0 appearance
-scripts/run_beer_0.sh
+scripts/run_hotel_0.sh
 ```
 Testing result is
 ```
-The annotation performance: sparsity: 11.6997, precision: 83.5609, recall: 52.8048, f1: 64.7144
+The annotation performance: sparsity: 10.6281, precision: 47.8882, recall: 59.9924, f1: 53.2612
 ```
 Extracted ratinales are saved in：
 ```
 ./beer_results/aspect0/visual_ann.txt
 ```
 Extracted rationale example：
-![image](https://note.youdao.com/yws/api/personal/file/AFFD88943D144AD7BA54ECBE0BB11E8A?method=download&shareKey=1e6e1b421e3faa4b9c7f874ec963ea2e)
+![image](http://note.youdao.com/s/AjhgD75S)
 
 using the others scprit in the `scripts` can obtain the following results.
-- beer review
-![image](https://note.youdao.com/yws/api/personal/file/F8A2A4DB18A3441BAAC8B3E196BF21ED?method=download&shareKey=1637a8956a1a906f66998eae30700443)
-- hotel review
-![image](https://note.youdao.com/yws/api/personal/file/A470599E7C994AFEBBF8C41B5E455CBF?method=download&shareKey=99f3d61d9ad47f5784785047ce9f0cda)
-
+![image](http://note.youdao.com/s/IBGcSbBL)
 
 
 
